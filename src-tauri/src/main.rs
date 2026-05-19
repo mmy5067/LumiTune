@@ -25,7 +25,10 @@ struct OverlayState {
 }
 
 fn overlay_state_path<R: Runtime>(app: &impl Manager<R>) -> Option<PathBuf> {
-    app.path().app_config_dir().ok().map(|dir| dir.join("LumiTune").join("overlay-state.json"))
+    app.path()
+        .app_config_dir()
+        .ok()
+        .map(|dir| dir.join("LumiTune").join("overlay-state.json"))
 }
 
 fn load_overlay_state<R: Runtime>(app: &impl Manager<R>) -> OverlayState {
@@ -39,8 +42,12 @@ fn load_overlay_state<R: Runtime>(app: &impl Manager<R>) -> OverlayState {
     OverlayState::default()
 }
 
-fn save_overlay_state<R: Runtime>(app: &impl Manager<R>, state: &OverlayState) -> Result<(), String> {
-    let path = overlay_state_path(app).ok_or_else(|| "Unable to determine app config directory".to_string())?;
+fn save_overlay_state<R: Runtime>(
+    app: &impl Manager<R>,
+    state: &OverlayState,
+) -> Result<(), String> {
+    let path = overlay_state_path(app)
+        .ok_or_else(|| "Unable to determine app config directory".to_string())?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
@@ -103,6 +110,28 @@ fn hide_window(app: &AppHandle, label: &str) -> Result<(), String> {
     window.hide().map_err(|e| e.to_string())
 }
 
+fn ensure_overlay_visible(app: &AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window(OVERLAY_LABEL)
+        .ok_or_else(|| "overlay window not found".to_string())?;
+
+    let position = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+    let center_x = position.x as f64 + f64::from(size.width) / 2.0;
+    let center_y = position.y as f64 + f64::from(size.height) / 2.0;
+
+    let is_on_screen = app
+        .monitor_from_point(center_x, center_y)
+        .map_err(|e| e.to_string())?
+        .is_some();
+
+    if !is_on_screen {
+        window.center().map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
 fn toggle_overlay_impl(app: &AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window(OVERLAY_LABEL)
@@ -111,7 +140,9 @@ fn toggle_overlay_impl(app: &AppHandle) -> Result<(), String> {
     match window.is_visible() {
         Ok(true) => window.hide().map_err(|e| e.to_string()),
         _ => {
+            ensure_overlay_visible(app)?;
             window.show().map_err(|e| e.to_string())?;
+            window.unminimize().map_err(|e| e.to_string())?;
             window.set_focus().map_err(|e| e.to_string())?;
             Ok(())
         }
@@ -275,15 +306,15 @@ fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
     let size = overlay_state
         .width
         .and_then(|width| overlay_state.height.map(|height| (width as f64, height as f64)))
-        .unwrap_or((340.0, 150.0));
+        .unwrap_or((340.0, 182.0));
     let position = overlay_state
         .x
         .and_then(|x| overlay_state.y.map(|y| (x as f64, y as f64)));
 
     let builder = WebviewWindowBuilder::new(app, OVERLAY_LABEL, WebviewUrl::App("index.html".into()))
-        .title("Apple Music Lite Overlay")
+        .title("LumiTune Mini Player")
         .inner_size(size.0, size.1)
-        .min_inner_size(260.0, 88.0)
+        .min_inner_size(260.0, 136.0)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
@@ -303,7 +334,7 @@ fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
 }
 
 fn create_tray(app: &tauri::App) -> tauri::Result<()> {
-    let show_main = MenuItem::with_id(app, "show_main", "显示 Apple Music", true, None::<&str>)?;
+    let show_main = MenuItem::with_id(app, "show_main", "显示主窗口", true, None::<&str>)?;
     let toggle_overlay = MenuItem::with_id(app, "toggle_overlay", "显示/隐藏悬浮窗", true, None::<&str>)?;
     let previous = MenuItem::with_id(app, "previous", "上一首", true, None::<&str>)?;
     let play_pause = MenuItem::with_id(app, "play_pause", "播放/暂停", true, None::<&str>)?;
@@ -323,7 +354,7 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
     )?;
 
     TrayIconBuilder::new()
-        .tooltip("Apple Music Lite")
+        .tooltip("LumiTune")
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -394,40 +425,36 @@ fn main() {
             create_tray(app)?;
             Ok(())
         })
-        .on_window_event(|window, event| {
-            match event {
-                WindowEvent::Moved(position) if window.label() == OVERLAY_LABEL => {
-                    let mut state = load_overlay_state(window.app_handle());
-                    state.x = Some(position.x);
-                    state.y = Some(position.y);
-                    if let Ok(size) = window.outer_size() {
-                        state.width = Some(size.width);
-                        state.height = Some(size.height);
-                    }
-                    let _ = save_overlay_state(window.app_handle(), &state);
-                }
-                WindowEvent::Resized(size) if window.label() == OVERLAY_LABEL => {
-                    let mut state = load_overlay_state(window.app_handle());
+        .on_window_event(|window, event| match event {
+            WindowEvent::Moved(position) if window.label() == OVERLAY_LABEL => {
+                let mut state = load_overlay_state(window.app_handle());
+                state.x = Some(position.x);
+                state.y = Some(position.y);
+                if let Ok(size) = window.outer_size() {
                     state.width = Some(size.width);
                     state.height = Some(size.height);
-                    if let Ok(pos) = window.outer_position() {
-                        state.x = Some(pos.x);
-                        state.y = Some(pos.y);
-                    }
-                    let _ = save_overlay_state(window.app_handle(), &state);
                 }
-                WindowEvent::CloseRequested { api, .. } => {
-                    match window.label() {
-                        MAIN_LABEL | OVERLAY_LABEL => {
-                            api.prevent_close();
-                            let _ = window.hide();
-                        }
-                        _ => {}
-                    }
+                let _ = save_overlay_state(window.app_handle(), &state);
+            }
+            WindowEvent::Resized(size) if window.label() == OVERLAY_LABEL => {
+                let mut state = load_overlay_state(window.app_handle());
+                state.width = Some(size.width);
+                state.height = Some(size.height);
+                if let Ok(pos) = window.outer_position() {
+                    state.x = Some(pos.x);
+                    state.y = Some(pos.y);
+                }
+                let _ = save_overlay_state(window.app_handle(), &state);
+            }
+            WindowEvent::CloseRequested { api, .. } => match window.label() {
+                MAIN_LABEL | OVERLAY_LABEL => {
+                    api.prevent_close();
+                    let _ = window.hide();
                 }
                 _ => {}
-            }
+            },
+            _ => {}
         })
         .run(tauri::generate_context!())
-        .expect("error while running Apple Music Lite");
+        .expect("error while running LumiTune");
 }

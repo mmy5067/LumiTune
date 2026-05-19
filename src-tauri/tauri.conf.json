@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Apple Music Lite",
+  "productName": "LumiTune",
   "version": "0.1.0",
   "identifier": "com.nanliy.applemusiclite",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Apple Music Lite",
+        "title": "LumiTune",
         "url": "https://music.apple.com",
         "width": 1180,
         "height": 780,
