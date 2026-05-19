@@ -5,9 +5,16 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
-use windows::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS,
-    KEYEVENTF_KEYUP, VIRTUAL_KEY,
+use windows::{
+    Media::Control::{
+        GlobalSystemMediaTransportControlsSession,
+        GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+    },
+    Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS,
+        KEYEVENTF_KEYUP, VIRTUAL_KEY,
+    },
 };
 
 const MAIN_LABEL: &str = "main";
@@ -22,6 +29,17 @@ struct OverlayState {
     y: Option<i32>,
     width: Option<u32>,
     height: Option<u32>,
+}
+
+#[derive(Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+struct NowPlayingInfo {
+    title: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+    playback_status: Option<String>,
+    source: Option<String>,
+    artwork_data_url: Option<String>,
 }
 
 fn overlay_state_path<R: Runtime>(app: &impl Manager<R>) -> Option<PathBuf> {
@@ -283,18 +301,91 @@ fn player_action_impl(app: &AppHandle, action: &str) -> Result<(), String> {
         "play_pause" | "playPause" | "toggle" => send_media_key(VK_MEDIA_PLAY_PAUSE_CODE),
         "next" => send_media_key(VK_MEDIA_NEXT_TRACK_CODE),
         "previous" | "prev" => send_media_key(VK_MEDIA_PREV_TRACK_CODE),
-        _ => return Err(format!("unknown action `{}`", action)),
+        _ => return Err(format!("unknown action `{action}`")),
     };
 
     if media_result.is_ok() {
         return media_result;
     }
 
-    let js = apple_music_control_js(action).ok_or_else(|| format!("unknown action `{}`", action))?;
+    let js = apple_music_control_js(action).ok_or_else(|| format!("unknown action `{action}`"))?;
     let main = app
         .get_webview_window(MAIN_LABEL)
         .ok_or_else(|| "main window not found".to_string())?;
     main.eval(js).map_err(|e| e.to_string())
+}
+
+fn map_playback_status(
+    status: GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+) -> &'static str {
+    match status {
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => "playing",
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused => "paused",
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Stopped => "stopped",
+        _ => "unknown",
+    }
+}
+
+fn trim_to_option(value: windows::core::HSTRING) -> Option<String> {
+    let text = value.to_string();
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn read_now_playing_from_session(
+    session: &GlobalSystemMediaTransportControlsSession,
+) -> Result<NowPlayingInfo, String> {
+    let playback_info = session.GetPlaybackInfo().map_err(|e| e.to_string())?;
+    let playback_status = playback_info
+        .PlaybackStatus()
+        .map(map_playback_status)
+        .map(str::to_string)
+        .ok();
+
+    let media_properties = session
+        .TryGetMediaPropertiesAsync()
+        .map_err(|e| e.to_string())?
+        .get()
+        .map_err(|e| e.to_string())?;
+
+    Ok(NowPlayingInfo {
+        title: media_properties.Title().ok().and_then(trim_to_option),
+        artist: media_properties.Artist().ok().and_then(trim_to_option),
+        album: media_properties.AlbumTitle().ok().and_then(trim_to_option),
+        playback_status,
+        source: session.SourceAppUserModelId().ok().and_then(trim_to_option),
+        artwork_data_url: None,
+    })
+}
+
+fn get_now_playing_impl() -> Result<NowPlayingInfo, String> {
+    let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+        .map_err(|e| e.to_string())?
+        .get()
+        .map_err(|e| e.to_string())?;
+
+    let session = match manager.GetCurrentSession() {
+        Ok(session) => session,
+        Err(_) => {
+            return Ok(NowPlayingInfo {
+                playback_status: Some("stopped".to_string()),
+                ..NowPlayingInfo::default()
+            })
+        }
+    };
+
+    match read_now_playing_from_session(&session) {
+        Ok(info) => Ok(info),
+        Err(_) => Ok(NowPlayingInfo {
+            playback_status: Some("unknown".to_string()),
+            source: session.SourceAppUserModelId().ok().and_then(trim_to_option),
+            ..NowPlayingInfo::default()
+        }),
+    }
 }
 
 fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
@@ -306,7 +397,7 @@ fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
     let size = overlay_state
         .width
         .and_then(|width| overlay_state.height.map(|height| (width as f64, height as f64)))
-        .unwrap_or((340.0, 182.0));
+        .unwrap_or((340.0, 176.0));
     let position = overlay_state
         .x
         .and_then(|x| overlay_state.y.map(|y| (x as f64, y as f64)));
@@ -314,7 +405,7 @@ fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
     let builder = WebviewWindowBuilder::new(app, OVERLAY_LABEL, WebviewUrl::App("index.html".into()))
         .title("LumiTune Mini Player")
         .inner_size(size.0, size.1)
-        .min_inner_size(260.0, 136.0)
+        .min_inner_size(260.0, 144.0)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
@@ -412,13 +503,19 @@ fn player_action(app: AppHandle, action: String) -> Result<(), String> {
     player_action_impl(&app, &action)
 }
 
+#[tauri::command]
+fn get_now_playing() -> Result<NowPlayingInfo, String> {
+    get_now_playing_impl()
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             show_main,
             hide_overlay,
             toggle_overlay,
-            player_action
+            player_action,
+            get_now_playing
         ])
         .setup(|app| {
             create_overlay_window(app)?;
