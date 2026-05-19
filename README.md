@@ -1,14 +1,9 @@
-# <div align="center"><img src="src-tauri/icons/LumiTune.png" alt="LumiTune logo" width="140" /></div>
+# <div align="center"><img src="src-tauri/icons/LumiTune.png" alt="LumiTune logo" width="148" /></div>
 
 # <div align="center">LumiTune</div>
 
 <p align="center">
-  A polished desktop wrapper for Apple Music Web with tray controls and a floating mini player.
-</p>
-
-<p align="center">
-  <a href="#-中文">中文</a> ·
-  <a href="#-english">English</a>
+  A polished Windows desktop wrapper for Apple Music Web, with tray controls and a floating mini player.
 </p>
 
 <p align="center">
@@ -19,173 +14,168 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Windows" />
-  <img src="https://img.shields.io/badge/WebView2-Required-2F6FED?style=flat-square" alt="WebView2" />
-  <img src="https://img.shields.io/badge/Status-Active%20Development-F45B8D?style=flat-square" alt="Active Development" />
+  <img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Windows only" />
+  <img src="https://img.shields.io/badge/WebView2-Required-2F6FED?style=flat-square" alt="WebView2 required" />
+  <img src="https://img.shields.io/badge/Status-Active%20Development-F45B8D?style=flat-square" alt="Active development" />
 </p>
 
 ---
 
-## 中文
+## Overview
 
-### 简介
+LumiTune is a Tauri-based desktop shell for Apple Music Web.
+It keeps the main experience close to the web player, then adds desktop-native quality-of-life features on top:
 
-LumiTune 是一个基于 `Tauri v2 + React + Rust` 构建的 Windows 桌面应用。
-它直接加载 Apple Music Web，并提供一个更轻、更顺手的悬浮迷你播放器体验。
+- a floating mini player
+- system tray controls
+- always-on-top overlay behavior
+- now playing info and artwork
+- persistent overlay preferences
 
-当前重点是把 Apple Music Web 的桌面使用体验做得更自然，而不是重做一套音乐平台。
+The project is intentionally scoped.
+It does not try to replace Apple Music, rebuild the service, or fake features that are not actually implemented yet.
 
-### 亮点
+## What It Does
 
-- 直接加载 `https://music.apple.com`
-- 系统托盘控制：显示主窗口、显示或隐藏悬浮窗、播放控制
-- 悬浮迷你播放器：可拖动、可隐藏、始终置顶
-- 悬浮窗透明度设置：`60% / 80% / 100%`
-- 悬浮窗大小设置：`small / medium / large`
-- 悬浮窗位置与尺寸持久化
-- 悬浮窗显示当前播放信息：歌名、艺人、专辑
-- 悬浮窗支持专辑封面显示
-
-### 技术栈
-
-| Layer | Stack |
-| --- | --- |
-| Desktop shell | `Tauri v2` |
-| Frontend | `React 19` + `Vite 7` + `TypeScript` |
-| Native backend | `Rust` |
-| Embedded runtime | `WebView2` |
-| Media info | Windows system media session |
-
-### 当前能力
-
-| 模块 | 状态 | 说明 |
+| Feature | Status | Notes |
 | --- | --- | --- |
-| 主窗口 | 已完成 | 直接承载 Apple Music Web |
-| 托盘控制 | 已完成 | 主窗口、悬浮窗、播放控制 |
-| 悬浮迷你播放器 | 已完成 | 拖动、隐藏、透明度、大小切换 |
-| 正在播放信息 | 已完成 | 歌名、艺人、专辑已接入 |
-| 专辑封面 | 已完成 | 悬浮窗左侧展示封面 |
-| 歌词同步 | 未实现 | 当前不提供歌词功能 |
-| MusicKit / Apple Music API | 未接入 | 当前不依赖官方 API |
+| Apple Music Web main window | Done | Loads `https://music.apple.com` directly |
+| System tray controls | Done | Show main window, show or hide overlay, previous, play or pause, next |
+| Floating mini player | Done | Drag, hide, always-on-top, compact overlay workflow |
+| Overlay opacity | Done | `60% / 80% / 100%`, stored locally |
+| Overlay size presets | Done | `small / medium / large`, stored locally |
+| Overlay position persistence | Done | Remembers position and size |
+| Now playing metadata | Done | Title, artist, and album |
+| Album artwork | Done | Displayed in the floating mini player |
+| Lyrics | Not implemented | No lyric sync or lyric display yet |
+| MusicKit | Not integrated | Not used at this stage |
+| Apple Music API | Not integrated | Not used at this stage |
 
-### 快速开始
+## Experience Goals
+
+LumiTune is designed around a few simple principles:
+
+- keep Apple Music Web as the source of truth
+- make playback controls reachable without tab-hopping
+- feel lighter and more desktop-native than a browser tab
+- stay honest about current capabilities
+
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Desktop runtime | `Tauri v2` |
+| Frontend | `React 19` + `TypeScript` + `Vite 7` |
+| Native layer | `Rust` |
+| Web runtime | `WebView2` |
+| Media metadata | Windows system media session |
+
+## Screens and Behavior
+
+### Main Window
+
+- loads Apple Music Web directly
+- keeps sign-in and playback inside the embedded webview
+
+### Floating Mini Player
+
+- stays on top
+- can be dragged freely
+- can be hidden independently
+- supports opacity and size presets
+- shows title, artist, album, and artwork
+
+### Tray Controls
+
+- open the main window
+- show or hide the overlay
+- previous track
+- play or pause
+- next track
+
+## Quick Start
 
 ```bash
 pnpm install
 pnpm tauri:dev
 ```
 
-### 打包
+## Production Build
 
 ```bash
 pnpm tauri:build
 ```
 
-### 项目结构
+## Privacy
+
+LumiTune does not run its own telemetry backend or collect Apple account credentials.
+
+It does:
+
+- store overlay preferences locally
+- read Windows media session metadata locally for now playing info
+- load Apple Music Web directly
+- request artwork metadata from Apple endpoints when needed
+
+See [PRIVACY.md](PRIVACY.md) for the full privacy note.
+
+## Release Flow
+
+This repository includes a GitHub Actions workflow for Windows packaging.
+
+### Automatic Windows build
+
+- pushes to `main`
+- pull requests
+- manual workflow dispatch
+
+These runs build Windows installer artifacts and upload them as GitHub Actions artifacts.
+
+### Draft release build
+
+Pushing a tag like `v0.1.0` will:
+
+- build Windows installers
+- create or update a draft GitHub Release
+- upload the generated `.msi` and `.exe` installer assets
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes history.
+
+## Project Layout
 
 ```text
 LumiTune/
-├─ src/                 # React overlay frontend
-├─ src-tauri/           # Tauri + Rust backend
-│  ├─ icons/            # App icons and logo
-│  └─ src/main.rs       # Window, tray, media session integration
-├─ index.html
-└─ README.md
+|-- src/                 React overlay frontend
+|-- src-tauri/           Tauri + Rust backend
+|   |-- icons/           App icons and logo
+|   `-- src/main.rs      Window, tray, and media integration
+|-- .github/workflows/   Windows build and release automation
+|-- CHANGELOG.md
+|-- PRIVACY.md
+`-- README.md
 ```
 
-### 开发说明
+## Current Scope
 
-- 本项目当前面向 `Windows`。
-- 主窗口继续直接加载 Apple Music Web。
-- 当前不提供歌词同步、内容下载或 DRM 绕过能力。
-- 悬浮窗的视觉与交互仍在持续打磨中。
+The current release is focused on:
 
-### 免责声明
+- Windows desktop packaging
+- Apple Music Web as the primary player surface
+- overlay polish
+- now playing information
+- branding and release readiness
 
-LumiTune 是一个独立的开源项目，与 Apple Inc. 没有隶属关系。
+It is not focused on:
 
-Apple Music 是 Apple Inc. 的商标。
-本项目不会绕过 DRM，不下载 Apple Music 音频内容，仅对 Apple Music Web 做桌面封装与体验增强。
+- lyric synchronization
+- downloading tracks
+- MusicKit integration
+- Apple Music API integration
+- offline playback tooling
 
----
-
-## English
-
-### Overview
-
-LumiTune is a Windows desktop wrapper built with `Tauri v2 + React + Rust`.
-It loads Apple Music Web directly and adds a cleaner desktop workflow with tray controls and a floating mini player.
-
-The goal is to improve the Apple Music Web desktop experience, not to replace the music service itself.
-
-### Highlights
-
-- Loads `https://music.apple.com` directly
-- System tray controls for main window, overlay visibility, and playback
-- Floating mini player with drag, hide, and always-on-top behavior
-- Adjustable overlay opacity: `60% / 80% / 100%`
-- Adjustable overlay size: `small / medium / large`
-- Persistent overlay position and size
-- Now playing info in the overlay: title, artist, album
-- Album artwork shown in the mini player
-
-### Tech Stack
-
-| Layer | Stack |
-| --- | --- |
-| Desktop shell | `Tauri v2` |
-| Frontend | `React 19` + `Vite 7` + `TypeScript` |
-| Native backend | `Rust` |
-| Embedded runtime | `WebView2` |
-| Media info | Windows system media session |
-
-### Current Scope
-
-| Module | Status | Notes |
-| --- | --- | --- |
-| Main window | Done | Hosts Apple Music Web directly |
-| Tray controls | Done | Main window, overlay, playback actions |
-| Floating mini player | Done | Drag, hide, opacity, size switching |
-| Now playing info | Done | Title, artist, and album are wired in |
-| Album artwork | Done | Artwork appears on the left side of the overlay |
-| Lyrics sync | Not implemented | No lyrics feature at this stage |
-| MusicKit / Apple Music API | Not integrated | The app does not rely on official Apple APIs yet |
-
-### Quick Start
-
-```bash
-pnpm install
-pnpm tauri:dev
-```
-
-### Build
-
-```bash
-pnpm tauri:build
-```
-
-### Project Layout
-
-```text
-LumiTune/
-├─ src/                 # React overlay frontend
-├─ src-tauri/           # Tauri + Rust backend
-│  ├─ icons/            # App icons and logo
-│  └─ src/main.rs       # Window, tray, and media session integration
-├─ index.html
-└─ README.md
-```
-
-### Notes
-
-- This project currently targets `Windows`.
-- The main window continues to load Apple Music Web directly.
-- There is no lyric sync, content downloading, or DRM bypassing.
-- The floating mini player is still being refined visually and interaction-wise.
-
-### Disclaimer
+## Disclaimer
 
 LumiTune is an independent open-source project and is not affiliated with Apple Inc.
 
 Apple Music is a trademark of Apple Inc.
-This project does not bypass DRM, does not download Apple Music tracks, and only wraps Apple Music Web with a desktop-oriented experience.
+This project does not bypass DRM, does not download Apple Music tracks, and only wraps Apple Music Web in a desktop-oriented experience.

@@ -173,7 +173,7 @@ fn apple_music_control_js(action: &str) -> Option<&'static str> {
             r#"
 (() => {
   const labelMap = {
-    play_pause: ['播放', '暂停', 'Play', 'Pause', '播放/暂停', 'play/pause'],
+    play_pause: ['播放', '暂停', '播放/暂停', 'Play', 'Pause', 'play/pause'],
     previous: ['上一首', '上一曲', 'Previous', 'Back', 'Skip back', 'Previous track'],
     next: ['下一首', '下一曲', 'Next', 'Forward', 'Skip forward', 'Next track']
   };
@@ -198,7 +198,7 @@ fn apple_music_control_js(action: &str) -> Option<&'static str> {
         .join(' ')
         .trim()
         .toLowerCase();
-      return keywords.some(keyword => label.includes(keyword.toLowerCase()));
+      return keywords.some((keyword) => label.includes(keyword.toLowerCase()));
     });
   }
 
@@ -214,7 +214,7 @@ fn apple_music_control_js(action: &str) -> Option<&'static str> {
             r#"
 (() => {
   const labelMap = {
-    play_pause: ['播放', '暂停', 'Play', 'Pause', '播放/暂停', 'play/pause'],
+    play_pause: ['播放', '暂停', '播放/暂停', 'Play', 'Pause', 'play/pause'],
     previous: ['上一首', '上一曲', 'Previous', 'Back', 'Skip back', 'Previous track'],
     next: ['下一首', '下一曲', 'Next', 'Forward', 'Skip forward', 'Next track']
   };
@@ -239,7 +239,7 @@ fn apple_music_control_js(action: &str) -> Option<&'static str> {
         .join(' ')
         .trim()
         .toLowerCase();
-      return keywords.some(keyword => label.includes(keyword.toLowerCase()));
+      return keywords.some((keyword) => label.includes(keyword.toLowerCase()));
     });
   }
 
@@ -255,7 +255,7 @@ fn apple_music_control_js(action: &str) -> Option<&'static str> {
             r#"
 (() => {
   const labelMap = {
-    play_pause: ['播放', '暂停', 'Play', 'Pause', '播放/暂停', 'play/pause'],
+    play_pause: ['播放', '暂停', '播放/暂停', 'Play', 'Pause', 'play/pause'],
     previous: ['上一首', '上一曲', 'Previous', 'Back', 'Skip back', 'Previous track'],
     next: ['下一首', '下一曲', 'Next', 'Forward', 'Skip forward', 'Next track']
   };
@@ -280,7 +280,7 @@ fn apple_music_control_js(action: &str) -> Option<&'static str> {
         .join(' ')
         .trim()
         .toLowerCase();
-      return keywords.some(keyword => label.includes(keyword.toLowerCase()));
+      return keywords.some((keyword) => label.includes(keyword.toLowerCase()));
     });
   }
 
@@ -402,16 +402,17 @@ fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
         .x
         .and_then(|x| overlay_state.y.map(|y| (x as f64, y as f64)));
 
-    let builder = WebviewWindowBuilder::new(app, OVERLAY_LABEL, WebviewUrl::App("index.html".into()))
-        .title("LumiTune Mini Player")
-        .inner_size(size.0, size.1)
-        .min_inner_size(260.0, 144.0)
-        .decorations(false)
-        .transparent(true)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .resizable(false)
-        .visible(false);
+    let builder =
+        WebviewWindowBuilder::new(app, OVERLAY_LABEL, WebviewUrl::App("index.html".into()))
+            .title("LumiTune Mini Player")
+            .inner_size(size.0, size.1)
+            .min_inner_size(260.0, 144.0)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .resizable(false)
+            .visible(false);
 
     let builder = if let Some((x, y)) = position {
         builder.position(x, y)
@@ -426,7 +427,8 @@ fn create_overlay_window(app: &tauri::App) -> tauri::Result<()> {
 
 fn create_tray(app: &tauri::App) -> tauri::Result<()> {
     let show_main = MenuItem::with_id(app, "show_main", "显示主窗口", true, None::<&str>)?;
-    let toggle_overlay = MenuItem::with_id(app, "toggle_overlay", "显示/隐藏悬浮窗", true, None::<&str>)?;
+    let toggle_overlay =
+        MenuItem::with_id(app, "toggle_overlay", "显示/隐藏悬浮窗", true, None::<&str>)?;
     let previous = MenuItem::with_id(app, "previous", "上一首", true, None::<&str>)?;
     let play_pause = MenuItem::with_id(app, "play_pause", "播放/暂停", true, None::<&str>)?;
     let next = MenuItem::with_id(app, "next", "下一首", true, None::<&str>)?;
