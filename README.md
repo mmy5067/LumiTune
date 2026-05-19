@@ -19,7 +19,21 @@
   <img src="https://img.shields.io/badge/Status-Active%20Development-F45B8D?style=flat-square" alt="Active development" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/mmy5067/LumiTune/releases/latest"><strong>Download Latest Build</strong></a> ·
+  <a href="https://github.com/mmy5067/LumiTune/releases">All Releases</a>
+</p>
+
 ---
+
+## Download
+
+If you just want to install LumiTune, go straight to the latest release:
+
+- [Download the latest Windows build](https://github.com/mmy5067/LumiTune/releases/latest)
+- Open the newest release and download the `.exe` or `.msi` installer asset
+
+If no public release is available yet, the newest test installers may still be available in GitHub Actions artifacts.
 
 ## Overview
 
