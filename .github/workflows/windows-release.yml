@@ -45,7 +45,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tauriScript: pnpm tauri
+          tauriScript: npx tauri
           args: --bundles nsis,msi
 
       - name: Upload Windows bundle artifacts
@@ -89,7 +89,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tauriScript: pnpm tauri
+          tauriScript: npx tauri
           args: --bundles nsis,msi
           tagName: ${{ github.ref_name }}
           releaseName: LumiTune ${{ github.ref_name }}
