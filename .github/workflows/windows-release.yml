@@ -27,12 +27,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
-          cache: pnpm
 
-      - name: Enable Corepack
-        run: |
-          corepack enable
-          corepack prepare pnpm@10 --activate
+      - name: Install pnpm
+        run: npm install -g pnpm@10
 
       - name: Install frontend dependencies
         run: pnpm install --no-frozen-lockfile
@@ -71,12 +68,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
-          cache: pnpm
 
-      - name: Enable Corepack
-        run: |
-          corepack enable
-          corepack prepare pnpm@10 --activate
+      - name: Install pnpm
+        run: npm install -g pnpm@10
 
       - name: Install frontend dependencies
         run: pnpm install --no-frozen-lockfile
